@@ -271,8 +271,7 @@ public class Populate {
         			
 	                for(int i = 0; i < characters.length; i++) {
 	                	//clean up the formatting
-	                	String role = characters[i].replaceAll("[\\[\\]\"]", "");
-	                	//might want to clear out number only roles       
+	                	String role = characters[i].replaceAll("[\\[\\]\"]", "");      
 
 	            		ps1.setString(1, principals[0]);
 	            		ps1.setString(2, principals[2]);
