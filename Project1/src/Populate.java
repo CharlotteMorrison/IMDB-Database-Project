@@ -5,7 +5,6 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class Populate {
@@ -30,10 +29,26 @@ public class Populate {
 		populateMovies(movieFile, connection, statement);
 		
 		String principalsFile = "src/ImportFiles/titlePrincipals.tsv";
-		populatePrincipals(principalsFile, connection, statement);		
+		populatePrincipals(principalsFile, connection, statement);	
+		
+		String ratingsFile = "src/ImportFiles/ratings.tsv";
+		populateRatings(ratingsFile, connection, statement);	
+		
+
+		try {
+			if(statement != null) {
+				statement.close();
+			}
+			if(connection != null) {
+				connection.close();
+			}
+		}
+		catch (Exception e){
+			e.printStackTrace();
+		}		
 	}
 	
-	public void populateNames(String file, Connection connection, Statement statement) throws SQLException {
+	private void populateNames(String file, Connection connection, Statement statement) throws SQLException {
 	    String fileName = file; 
         String line = null;
     	int count = 0;
@@ -93,7 +108,7 @@ public class Populate {
         System.out.println("Names table populated.");
     }
 	
-	public void populateMovies(String file, Connection connection, Statement statement) throws SQLException {
+	private void populateMovies(String file, Connection connection, Statement statement) throws SQLException {
 		
         String fileName = file; 
         String line = null;		
@@ -199,7 +214,7 @@ public class Populate {
         }
 	}
 
-	public void populatePrincipals(String file, Connection connection, Statement statement) throws SQLException {
+	private void populatePrincipals(String file, Connection connection, Statement statement) throws SQLException {
         String fileName = file; 
         String line = null;		
         int count = 0;
@@ -314,5 +329,54 @@ public class Populate {
         	ex.printStackTrace();
         }
 	}
+	
+	private void populateRatings(String file, Connection connection, Statement statement) throws SQLException {
+	    String fileName = file; 
+        String line = null;
+    	int count = 0;
+    	final int batchSize = 1000;
+    	
+        try {
+            FileReader fileReader =  new FileReader(fileName);
+            BufferedReader bufferedReader =  new BufferedReader(fileReader);
+
+            bufferedReader.readLine(); //skips the title line for me
+            
+        	String sql = "insert into Ratings (Movie_Identifier, Total_Ranking, Num_votes) values (?,?,?)";            
+        	PreparedStatement ps = connection.prepareStatement(sql);    
+        	//int counter = 0;
+        	
+            while((line = bufferedReader.readLine()) != null) {            	
+            	//counter++;
+            	//System.out.println(line);
+            	String[] rating = line.split("\\t");
+
+            	String identifier = rating[0];
+            	String totalRanking = rating[1];
+            	String numVotes = rating[2];
+
+            	ps.setString(1, identifier);
+            	ps.setString(2, totalRanking);
+            	ps.setString(3, numVotes);
+            	ps.addBatch();
+            		
+            	if(++count % batchSize == 0) {
+            			ps.executeBatch();
+            			System.out.println("Name Batch Loaded..." + count);
+            	}
+            
+            } 
+        	ps.executeBatch(); // insert remaining records
+        	ps.close();
+            bufferedReader.close();     
+        }
+        catch(FileNotFoundException ex) {
+            System.out.println("Unable to open file '" +fileName + "'");                
+        }
+        catch(IOException ex) {
+            System.out.println("Error reading file '" + fileName + "'");                  
+        }       
+        System.out.println("Ratings table populated.");
+    }	
 
 }
